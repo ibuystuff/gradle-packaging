@@ -1,0 +1,105 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.yaml:snakeyaml:1.14'
+    }
+}
+
+task cleanup(type: Delete) {
+    delete "$projectDir/build"
+}
+
+import org.yaml.snakeyaml.DumperOptions
+import org.yaml.snakeyaml.Yaml
+
+
+def getVersionName = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        try{
+            // commandLine 'git', 'describe', '--tags'
+            commandLine 'git', 'branch'
+            standardOutput = stdout
+        }catch(Exception e){
+            standardOutput = "unkown"
+        }
+    }
+    return stdout.toString().trim().replace("* ", "")
+}
+
+
+def loadConfig() {
+    DumperOptions options = new DumperOptions();
+    options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+    def yaml = new Yaml(options)
+	def file = new File("$projectDir/build.yml").text
+	def build = yaml.load(file)
+	// println yaml.dump(build)
+	return build
+}
+
+task packerZip(type: Zip, dependsOn: []) { // dependsOn: [composerInstall, vendor]) {
+
+	final String __PROJECT_BASE_PATH = "$projectDir/" + __BUILD_FOLDER + "/"
+
+    println __PROJECT_BASE_PATH
+	
+    Map buildConfig = loadConfig()
+
+	ArrayList includesList = buildConfig["packaging"]["includes"]
+	ArrayList excludesList = buildConfig["packaging"]["excludes"]
+	String __APP_PREFIX = buildConfig["packaging"]["name"]
+
+	logger.warn("\npackage includes: " + includesList.toString())
+	logger.warn("package excludes: " + excludesList.toString())
+
+    ArrayList excludeBaseList = [
+        '*.bat', 
+        '*.exe', 
+        '*.bak', 
+        'requirements.txt', 
+        'Vagrantfile', 
+        'Dockerfile', 
+        '.bumpversion', 
+        'gradle.properties', 
+        'Makefile', 
+        'settings.gradle', 
+        '*.gradle', 
+        '.gradle', 
+        '.gradle/*', 
+        'jets3t.properties', 
+        '.git', 
+        '.git/*',
+        'build.yml', 
+        '.gitignore', 
+        'README.md', 
+        'gradlew', 
+        'samples', 
+        'scripts'
+    ]
+
+    excludesList += excludeBaseList
+
+	from fileTree(dir: __PROJECT_BASE_PATH, includes: includesList, excludes: excludesList)
+    
+	into String.format("%s-%s", ARTIFACT_ID, POM_VERSION)
+    
+    destinationDir file("$projectDir/build/libs")
+
+    archiveName String.format("%s-%s.zip", ARTIFACT_ID, POM_VERSION, getVersionName())
+    
+}
+
+packerZip.onlyIf { file("$projectDir/build.yml").exists() }
+
+task encodeZip(type: Exec, dependsOn: [packerZip]) {
+	String __APP_PREFIX = loadConfig()["packaging"]["name"]
+    workingDir "$projectDir/build/libs/"
+    if(PROTECTED_ZIP_PASSWORD) {
+        String packerZipName =  String.format("%s-%s-%s.zip", ARTIFACT_ID, POM_VERSION, getVersionName())
+        String encodeZipname =  String.format("%s-%s.zip", ARTIFACT_ID, POM_VERSION, getVersionName())
+    	commandLine "zip", "-P", PROTECTED_ZIP_PASSWORD, "-r", packerZipName, encodeZipname      
+    }
+}

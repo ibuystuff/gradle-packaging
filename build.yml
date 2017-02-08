@@ -1,0 +1,16 @@
+packaging:
+  name: sample
+  repository: https://github.com/brnrdog/gulp-project-template.git
+  includes:
+    - bin/**
+    - config/**
+    - src/**
+    - templates/**
+    - var/**
+    - vendor/**
+    - web/**
+    - node_modules/**
+    - app/**
+  excludes:
+    - phpunit.xml.dist
+    - README.*

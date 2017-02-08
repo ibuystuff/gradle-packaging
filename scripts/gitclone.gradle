@@ -1,0 +1,36 @@
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.yaml:snakeyaml:1.14'
+        classpath 'org.ajoberstar:gradle-git:0.2.3'
+    }
+}
+
+import org.ajoberstar.gradle.git.tasks.*
+import org.yaml.snakeyaml.DumperOptions
+import org.yaml.snakeyaml.Yaml
+
+
+def loadConfigClone() {
+    DumperOptions options = new DumperOptions();
+    options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+    def yaml = new Yaml(options)
+	def file = new File("$projectDir/build.yml").text
+	def build = yaml.load(file)
+	// println yaml.dump(build)
+	return build
+}
+
+task cloneGitRepo(type: GitClone) {
+
+    Map buildConfig = loadConfigClone()
+
+    def destination = file(__BUILD_FOLDER)
+    uri = buildConfig["packaging"]["repository"]
+    destinationPath = destination
+    bare = false
+    enabled = !destination.exists() //to clone only once
+}

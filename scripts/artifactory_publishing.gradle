@@ -1,0 +1,34 @@
+
+def isReleaseBuild() {
+    return POM_VERSION.contains("RELEASE")
+}
+
+def getRepositoryUrl() {
+    return isReleaseBuild() 
+            ? "${ARTIFACTORY_URL}/${ARTIFACTORY_REPO}/"
+            : "${ARTIFACTORY_URL}/${ARTIFACTORY_REPO}/"
+}
+
+def getRepositoryUsername() {
+    return hasProperty('ARTIFACTORY_USERNAME') ? ARTIFACTORY_USERNAME : "NO_USER"
+}
+
+def getRepositoryPassword() {
+    return hasProperty('ARTIFACTORY_PASSWORD') ? ARTIFACTORY_PASSWORD : "NO_PWD"
+}
+
+
+apply plugin: 'maven-publish'
+
+
+publishing {
+    repositories {
+        maven {
+          credentials {
+            username getRepositoryUsername()
+            password getRepositoryPassword()
+          }
+          url getRepositoryUrl()
+        }
+    }
+}

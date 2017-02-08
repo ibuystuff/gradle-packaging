@@ -1,0 +1,37 @@
+
+task gulp(type:Exec) {
+  //println 'Performing gulp packaging tasks;
+  executable 'sh'
+  args '-c', "gulp --gulpfile build/project/gulpfile.js"
+}
+
+gulp.onlyIf { file(__BUILD_FOLDER + "/gulpfile.js build").exists() }
+
+task npmInstall(type:Exec) {
+  //println 'Performing NPM installation tasks
+  executable 'sh'
+  // args '-c', "npm install font-awesome; npm install"
+  args '-c', "cd build/project && npm install"
+}
+
+npmInstall.onlyIf { file(__BUILD_FOLDER + "/package.json").exists() }
+
+task composerInstall(type:Exec) {
+  //println 'Setting up dependencies'
+  executable 'sh'
+  args '-c', 'php -r "readfile(\'https://getcomposer.org/installer\');" | php'
+  standardOutput = new ByteArrayOutputStream()
+  ext.output = { return standardOutput.toString() }
+}
+
+composerInstall.onlyIf { file(__BUILD_FOLDER + "/composer.json").exists() }
+
+task vendor(type:Exec) {
+  //println 'Installing dependencies'
+  executable 'sh'
+  args '-c', 'php composer.phar install -d build/project'
+  standardOutput = new ByteArrayOutputStream()
+  ext.output = { return standardOutput.toString() }
+}
+
+vendor.onlyIf { file(__BUILD_FOLDER + "/composer.json").exists() }
