@@ -11,7 +11,7 @@ task npmInstall(type:Exec) {
   //println 'Performing NPM installation tasks
   executable 'sh'
   // args '-c', "npm install font-awesome; npm install"
-  args '-c', "cd build/project && npm install"
+  args '-c', String.format("cd %s && npm install", __BUILD_FOLDER)
 }
 
 npmInstall.onlyIf { file(__BUILD_FOLDER + "/package.json").exists() }
@@ -29,7 +29,7 @@ composerInstall.onlyIf { file(__BUILD_FOLDER + "/composer.json").exists() }
 task vendor(type:Exec) {
   //println 'Installing dependencies'
   executable 'sh'
-  args '-c', 'php composer.phar install -d build/project'
+  args '-c', String.fomat('php composer.phar install -d %s', __BUILD_FOLDER)
   standardOutput = new ByteArrayOutputStream()
   ext.output = { return standardOutput.toString() }
 }
